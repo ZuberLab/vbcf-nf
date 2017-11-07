@@ -46,8 +46,6 @@ process sample {
                mode: 'copy',
                overwrite: 'true'
 
-    module params.samtools
-
     input:
     set val(id), file(bam) from bamFiles
 
