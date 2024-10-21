@@ -55,6 +55,7 @@ process sample {
     script:
     """
     samtools view \
+        -@ ${task.cpus} \
         -s ${params.sample_fraction} \
         -b ${bam} \
         -o ${id}_sample.bam
