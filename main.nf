@@ -1,65 +1,43 @@
 #!/usr/bin/env nextflow
 
-Channel
-    .fromPath( params.input )
+nextflow.enable.dsl = 2
+
+// Import modules
+include { DOWNLOAD } from './modules/download'
+include { SAMPLE } from './modules/sample'
+
+// Define input channel
+ch_download_input = Channel
+    .fromPath(params.input)
     .splitCsv()
     .flatten()
-    .map { [ it.replaceAll(/.*\/|\.bam/, ''), it ] }
-    .set { bamLinks }
+    .map { link -> 
+        def fileName = link.tokenize('/')[-1]  // Get the filename from the URL
+        def extension = fileName.endsWith('.tar.gz') ? 'tar.gz' : fileName.tokenize('.')[-1]  // Get extension
+        def baseName = fileName.replaceFirst(/\.(tar\.gz|bam)$/, '')  // Remove extension
+        [baseName, link, extension]
+    }
 
-process download {
+// Main workflow
+workflow {
 
-    tag { id }
+    // Download NGS files
+    ngsFiles = DOWNLOAD( ch_download_input )
 
-    publishDir path: "${params.resultsDir}/reads",
-               mode: 'copy',
-               overwrite: 'true'
+    ngsFilesSamples = ngsFiles
+        .map { id, files -> 
+            files.collect { file -> 
+                def name = file.name // Get the filename
+                def extension = name.endsWith('.fastq.gz') ? 'fastq.gz' : name.tokenize('.')[-1] // Get extension
+                name = name.replaceFirst(/\.(fastq\.gz|bam)$/, '') // Remove extension
+                tuple(name, file, extension) 
+            }
+        }
+        .flatMap { it -> it }
 
-    input:
-    set val(id), val(link) from bamLinks
+    // Sample NGS files
+    sampleFiles = SAMPLE( ngsFilesSamples )
 
-    output:
-    set val(id), file("${id}.bam") into bamFiles
-
-    script:
-    """
-    wget \
-      --no-verbose \
-      --no-use-server-timestamps \
-      --continue \
-      --output-document=${id}.bam \
-      --no-check-certificate \
-      --auth-no-challenge \
-      --user=${params.username} \
-      --password=${params.password} \
-      --append-output=${id}.log \
-      ${link}
-    """
-}
-
-process sample {
-
-    tag { id }
-
-    publishDir path: "${params.resultsDir}/samples",
-               saveAs: { filename -> filename.replaceAll(/_sample/, '') },
-               mode: 'copy',
-               overwrite: 'true'
-
-    input:
-    set val(id), file(bam) from bamFiles
-
-    output:
-    set val(id), file("${id}_sample.bam") into sampleFiles
-
-    script:
-    """
-    samtools view \
-        -@ ${task.cpus} \
-        -s ${params.sample_fraction} \
-        -b ${bam} \
-        -o ${id}_sample.bam
-    """
 }
 
 workflow.onComplete {
