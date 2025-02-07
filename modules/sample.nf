@@ -25,7 +25,7 @@ process SAMPLE {
         """
     else if (extension == 'fastq.gz')
         """
-        seqtk sample -s100 ${file} ${params.sample_fraction} | gzip > ${id}_sample.fastq.gz
+        seqtk sample -s100 ${file} ${params.sample_fraction} | gzip > ${id}.fastq.gz
         """
     else
         error "Unsupported file extension: ${extension}"
