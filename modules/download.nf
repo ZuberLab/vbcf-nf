@@ -31,15 +31,15 @@ process DOWNLOAD {
         tar -xzvf ${id}.${extension}
         rm ${id}.${extension}
 
-        find . -type f -name '*_R1_*.fastq.gz' -exec mv {} . \;
-        cat *_R1_*.fastq.gz > ${id}_R1.fastq.gz
+        find . -type f -name '*_R1_*.fastq.gz' -exec mv {} . \\;
+        cat *_R1*.fastq.gz >> ${id}_R1.fastq.gz
         rm *_R1_*.fastq.gz
 
         if [[ "${params.paired_end}" == "false" ]]; then
-            ${id}_R1.fastq.gz > ${id}.fastq.gz
+            mv ${id}_R1.fastq.gz ${id}.fastq.gz
         else
-            find . -type f -name '*_R2_*.fastq.gz' -exec mv {} . \;
-            cat *_R2_*.fastq.gz > ${id}_R2.fastq.gz
+            find . -type f -name '*_R2_*.fastq.gz' -exec mv {} . \\;
+            cat *_R2_*.fastq.gz >> ${id}_R2.fastq.gz
             rm *_R2_*.fastq.gz
         fi
     fi

@@ -25,15 +25,18 @@ workflow {
     ngsFiles = DOWNLOAD( ch_download_input )
 
     ngsFilesSamples = ngsFiles
-        .map { id, files -> 
-            files.collect { file -> 
-                def name = file.name // Get the filename
-                def extension = name.endsWith('.fastq.gz') ? 'fastq.gz' : name.tokenize('.')[-1] // Get extension
-                name = name.replaceFirst(/\.(fastq\.gz|bam)$/, '') // Remove extension
-                tuple(name, file, extension) 
+        .flatMap { id, file ->
+            if (file instanceof List) {
+                file.collect { [id, it] }
+            } else {
+                [[id, file]]
             }
         }
-        .flatMap { it -> it }
+        .map { id, file -> 
+            def name = file.baseName.replaceFirst(/\..*$/, '')  // Remove extension
+            def extension = file.name.endsWith('.fastq.gz') ? 'fastq.gz' : file.name.tokenize('.')[-1]  // Get extension
+            tuple(name, file, extension) 
+        }
 
     // Sample NGS files
     sampleFiles = SAMPLE( ngsFilesSamples )
