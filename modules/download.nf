@@ -10,7 +10,7 @@ process DOWNLOAD {
     tuple val(id), val(link), val(extension)
 
     output:
-    tuple val(id), path("${id}{.bam,_R1.fastq.gz,_R2.fastq.gz}"), emit: ngsFiles
+    tuple val(id), path("${id}{.bam,.fastq.gz,_R1.fastq.gz,_R2.fastq.gz}"), emit: ngsFiles
 
     script:
     """
